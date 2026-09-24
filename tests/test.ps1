@@ -1,9 +1,13 @@
 [CmdletBinding()]
-param([string] $PwshPath = (Get-Command pwsh).Source)
+param(
+    [string] $ShellPath = (Get-Process -Id $PID).Path,
+    [string] $OtherShellPath
+)
 
 $ErrorActionPreference = 'Stop'
-if ($PSVersionTable.PSVersion.ToString() -ne '7.6.6') {
-    throw "Run tests with PowerShell 7.6.6; current version: $($PSVersionTable.PSVersion)"
+if ($PSVersionTable.PSVersion.ToString() -ne '7.6.6' -and
+    -not ($PSVersionTable.PSVersion.Major -eq 5 -and $PSVersionTable.PSVersion.Minor -eq 1)) {
+    throw "Run tests with Windows PowerShell 5.1 or PowerShell 7.6.6; current version: $($PSVersionTable.PSVersion)"
 }
 
 $root = Split-Path -Parent $PSScriptRoot
@@ -30,10 +34,20 @@ try {
     }
 
     foreach ($case in @('restore', 'explicit', 'missing')) {
-        & $PwshPath -NoProfile -File (Join-Path $PSScriptRoot 'runtime-case.ps1') `
+        & $ShellPath -NoProfile -File (Join-Path $PSScriptRoot 'runtime-case.ps1') `
             -Case $case -RuntimePath (Join-Path $installRoot 'lastdir.ps1') `
             -StatePath $statePath -TargetPath $target
         if ($LASTEXITCODE -ne 0) { throw "Runtime case failed: $case" }
+    }
+    if ($OtherShellPath) {
+        & $ShellPath -NoProfile -File (Join-Path $PSScriptRoot 'runtime-case.ps1') `
+            -Case explicit -RuntimePath (Join-Path $installRoot 'lastdir.ps1') `
+            -StatePath $statePath -TargetPath $target
+        if ($LASTEXITCODE -ne 0) { throw 'Cross-shell setup failed.' }
+        & $OtherShellPath -NoProfile -File (Join-Path $PSScriptRoot 'runtime-case.ps1') `
+            -Case restore-existing -RuntimePath (Join-Path $installRoot 'lastdir.ps1') `
+            -StatePath $statePath -TargetPath $target
+        if ($LASTEXITCODE -ne 0) { throw 'Cross-shell restore failed.' }
     }
 
     & (Join-Path $root 'uninstall.ps1') -ProfilePath $profilePath -InstallRoot $installRoot | Out-Null
@@ -46,7 +60,7 @@ try {
     $env:PWSH_LASTDIR_STATE_FILE = $statePath
     & (Join-Path $root 'uninstall.ps1') -ProfilePath $profilePath -InstallRoot $installRoot -RemoveState | Out-Null
     if (Test-Path -LiteralPath $statePath) { throw 'RemoveState did not delete the state file.' }
-    Write-Output 'PASS: install, reinstall, restore, explicit directory, invalid directory, uninstall, RemoveState.'
+    Write-Output "PASS $($PSVersionTable.PSVersion): install, reinstall, restore, explicit directory, invalid directory, cross-shell restore (when configured), uninstall, RemoveState."
 } finally {
     Remove-Item Env:PWSH_LASTDIR_STATE_FILE -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $scratch -Recurse -Force

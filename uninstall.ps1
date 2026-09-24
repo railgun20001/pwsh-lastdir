@@ -1,13 +1,23 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string] $ProfilePath = $PROFILE.CurrentUserCurrentHost,
-    [string] $InstallRoot = (Join-Path $env:LOCALAPPDATA 'PwshLastDir'),
+    [string] $InstallRoot,
     [switch] $RemoveState
 )
 
 $ErrorActionPreference = 'Stop'
-if ($PSVersionTable.PSVersion.Major -lt 7) {
-    throw 'pwsh-lastdir requires PowerShell 7 or later.'
+$version = $PSVersionTable.PSVersion
+if (-not (($version.Major -eq 5 -and $version.Minor -ge 1) -or $version.Major -ge 7)) {
+    throw 'pwsh-lastdir requires Windows PowerShell 5.1 or PowerShell 7.'
+}
+if (-not $InstallRoot) {
+    # 默认路径与安装脚本保持一致，两个 shell 可以分别卸载。
+    $subdirectory = if ($PSVersionTable.PSVersion.Major -eq 5) {
+        'PwshLastDir/WindowsPowerShell'
+    } else {
+        'PwshLastDir'
+    }
+    $InstallRoot = Join-Path $env:LOCALAPPDATA $subdirectory
 }
 
 $begin = '# >>> pwsh-lastdir >>>'

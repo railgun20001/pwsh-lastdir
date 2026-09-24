@@ -18,6 +18,12 @@ switch ($Case) {
         if ((prompt) -ne 'custom> ') { throw 'Original prompt was not preserved.' }
         if ([System.IO.File]::ReadAllText($StatePath) -ne $TargetPath) { throw 'Prompt did not save the directory.' }
     }
+    'restore-existing' {
+        Set-Location -LiteralPath $HOME
+        . $RuntimePath
+        if ((Get-Location).Path -ne $TargetPath) { throw 'Directory saved by the other shell was not restored.' }
+        if ((prompt) -ne 'custom> ') { throw 'Original prompt was not preserved.' }
+    }
     'explicit' {
         [System.IO.File]::WriteAllText($StatePath, $HOME)
         Set-Location -LiteralPath $TargetPath

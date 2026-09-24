@@ -1,6 +1,6 @@
 # pwsh-lastdir
 
-在新开的 PowerShell 7 窗口中继续使用最近的工作目录。 / Resume your most recent working directory in a new PowerShell 7 window.
+在新开的 PowerShell 窗口中继续使用最近的工作目录。 / Resume your most recent working directory in a new PowerShell window.
 
 ## 中文
 
@@ -11,19 +11,22 @@
 - 若终端已指定其他启动目录，保持该目录不变。
 - 保留原有的 PowerShell 提示符；安装和卸载均会备份发生改动的 profile。
 
-**仅支持 PowerShell 7（`pwsh`），不提供 cmd 支持。** 不支持 Windows PowerShell 5.1。多个窗口共用一份目录记录，最后一次显示提示符的窗口会更新它。若显式指定的启动目录恰好是用户主目录，仍会触发恢复。
+**支持 Windows PowerShell 5.1（`powershell.exe`）和 PowerShell 7（`pwsh`），不提供 cmd 支持。** 两种 shell 共用一份目录记录，最后一次显示提示符的窗口会更新它。若显式指定的启动目录恰好是用户主目录，仍会触发恢复。
 
-已在 Windows 上使用 **PowerShell 7.6.6** 验证。安装不需要管理员权限，也不会自动下载其他程序。
+已在 Windows 上使用 **Windows PowerShell 5.1** 和 **PowerShell 7.6.6** 验证。安装不需要管理员权限，也不会自动下载其他程序。
 
 ### 安装
 
 ```powershell
 git clone https://github.com/railgun20001/pwsh-lastdir.git
 cd pwsh-lastdir
+# 安装到 PowerShell 7
 pwsh -NoProfile -File ./install.ps1
+# 安装到 Windows PowerShell 5.1
+powershell.exe -NoProfile -File ./install.ps1
 ```
 
-关闭并重新打开 pwsh 窗口后生效。安装脚本将运行脚本复制到当前用户的 `%LOCALAPPDATA%/PwshLastDir/lastdir.ps1`，并在当前用户的 pwsh ConsoleHost profile 中添加带标记的加载代码。重复运行安装脚本可更新运行脚本，不会重复添加代码。安装前若 profile 已存在，发生修改时会在同目录生成带时间戳的备份。
+按需运行对应命令；若两种 shell 都使用，就分别运行两条安装命令。重新打开相应窗口后生效。PowerShell 7 使用 `%LOCALAPPDATA%/PwshLastDir/lastdir.ps1`，Windows PowerShell 5.1 使用 `%LOCALAPPDATA%/PwshLastDir/WindowsPowerShell/lastdir.ps1`。两者写入各自当前用户的 ConsoleHost profile，共用 `~/.pwsh_lastdir`。重复安装不会重复添加加载代码；修改已有 profile 前会在同目录生成带时间戳的备份。
 
 若 profile 已有自己编写的同类目录恢复代码，请先手动移除旧代码，以免两个提示符钩子同时工作。
 
@@ -31,9 +34,10 @@ pwsh -NoProfile -File ./install.ps1
 
 ```powershell
 pwsh -NoProfile -File ./uninstall.ps1
+powershell.exe -NoProfile -File ./uninstall.ps1
 ```
 
-卸载会移除加载代码和复制的运行脚本，保留 `~/.pwsh_lastdir`，以便以后重新安装。若还要删除目录记录：
+按需运行对应命令以分别卸载。卸载会移除该 shell 的加载代码和运行脚本，保留两者共用的 `~/.pwsh_lastdir`。若两种 shell 均已卸载，还要删除目录记录，可额外执行其中一条：
 
 ```powershell
 pwsh -NoProfile -File ./uninstall.ps1 -RemoveState
@@ -47,7 +51,7 @@ pwsh -NoProfile -File ./uninstall.ps1 -RemoveState
 pwsh -NoProfile -File ./tests/test.ps1
 ```
 
-测试要求 PowerShell 7.6.6，使用临时 profile 和目录，不修改真实的 PowerShell 配置。
+也可运行 `powershell.exe -NoProfile -File ./tests/test.ps1` 验证 Windows PowerShell 5.1。测试使用临时 profile 和目录，不修改真实的 PowerShell 配置。
 
 ## English
 
@@ -58,19 +62,22 @@ pwsh -NoProfile -File ./tests/test.ps1
 - Leaves an explicitly selected starting directory unchanged when it differs from your home directory.
 - Preserves your existing prompt. The installer and uninstaller back up a profile before changing it.
 
-**PowerShell 7 (`pwsh`) only. cmd is not supported.** Windows PowerShell 5.1 is not supported. All windows share one state file; the last window to display a prompt updates it. A session explicitly started in the home directory will also restore the saved directory.
+**Supports Windows PowerShell 5.1 (`powershell.exe`) and PowerShell 7 (`pwsh`). cmd is not supported.** Both shells share one state file; the last window to display a prompt updates it. A session explicitly started in the home directory will also restore the saved directory.
 
-Tested on Windows with **PowerShell 7.6.6**. Installation needs no administrator privileges and downloads no dependencies.
+Tested on Windows with **Windows PowerShell 5.1** and **PowerShell 7.6.6**. Installation needs no administrator privileges and downloads no dependencies.
 
 ### Install
 
 ```powershell
 git clone https://github.com/railgun20001/pwsh-lastdir.git
 cd pwsh-lastdir
+# Install for PowerShell 7
 pwsh -NoProfile -File ./install.ps1
+# Install for Windows PowerShell 5.1
+powershell.exe -NoProfile -File ./install.ps1
 ```
 
-Open a new pwsh window to activate it. The installer copies the runtime to `%LOCALAPPDATA%/PwshLastDir/lastdir.ps1` and adds a marked loader block to the current user's pwsh ConsoleHost profile. Run the installer again to update the runtime without adding a second block. When an existing profile changes, a timestamped backup is written next to it.
+Run the command for each shell you use, then open a new window. PowerShell 7 stores its runtime at `%LOCALAPPDATA%/PwshLastDir/lastdir.ps1`; Windows PowerShell 5.1 uses `%LOCALAPPDATA%/PwshLastDir/WindowsPowerShell/lastdir.ps1`. Each installer adds a marked block to that shell's current-user ConsoleHost profile. Both share `~/.pwsh_lastdir`. Running the installer again updates the runtime without adding a second block. An existing profile receives a timestamped backup before it changes.
 
 If your profile already contains a custom directory restore hook, remove that old code first to avoid running both prompt hooks.
 
@@ -78,9 +85,10 @@ If your profile already contains a custom directory restore hook, remove that ol
 
 ```powershell
 pwsh -NoProfile -File ./uninstall.ps1
+powershell.exe -NoProfile -File ./uninstall.ps1
 ```
 
-The directory state file is retained for a possible reinstall. To delete it as well:
+Run the relevant command to uninstall each shell separately. The shared directory state file is retained for a possible reinstall. After uninstalling both shells, you can delete it too:
 
 ```powershell
 pwsh -NoProfile -File ./uninstall.ps1 -RemoveState
@@ -94,7 +102,7 @@ If you installed with a custom `-ProfilePath` or `-InstallRoot`, pass the same v
 pwsh -NoProfile -File ./tests/test.ps1
 ```
 
-The test suite requires PowerShell 7.6.6 and uses temporary profiles and directories. It does not modify your actual PowerShell configuration.
+You can also run `powershell.exe -NoProfile -File ./tests/test.ps1` for Windows PowerShell 5.1. Tests use temporary profiles and directories. They do not modify your actual PowerShell configuration.
 
 ## License
 

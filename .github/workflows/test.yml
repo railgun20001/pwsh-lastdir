@@ -22,5 +22,8 @@ jobs:
         shell: pwsh
         run: |
           $pwsh = Join-Path $env:RUNNER_TEMP 'pwsh-7.6.6/pwsh.exe'
-          & $pwsh -NoProfile -File ./tests/test.ps1 -PwshPath $pwsh
+          $windowsPowerShell = Join-Path $env:WINDIR 'System32/WindowsPowerShell/v1.0/powershell.exe'
+          & $pwsh -NoProfile -File ./tests/test.ps1 -ShellPath $pwsh -OtherShellPath $windowsPowerShell
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $windowsPowerShell -NoProfile -File ./tests/test.ps1 -ShellPath $windowsPowerShell -OtherShellPath $pwsh
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

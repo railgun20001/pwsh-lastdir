@@ -1,4 +1,4 @@
-# 在交互式 PowerShell 7 会话中恢复并记录最近的文件系统目录。
+﻿# 在交互式 Windows PowerShell 5.1 或 PowerShell 7 会话中恢复并记录最近的文件系统目录。
 if ($global:PwshLastDirInstalled) { return }
 $global:PwshLastDirInstalled = $true
 
@@ -35,13 +35,22 @@ function global:prompt {
                     [System.IO.Directory]::CreateDirectory($directory) | Out-Null
                 }
                 $temporaryFile = "$stateFile.$PID.$([guid]::NewGuid().ToString('N')).tmp"
+                $backupFile = "$temporaryFile.bak"
                 try {
                     [System.IO.File]::WriteAllText($temporaryFile, $path)
-                    [System.IO.File]::Move($temporaryFile, $stateFile, $true)
+                    # .NET Framework 没有 File.Move 的覆盖重载；用同目录替换保持写入完整。
+                    if ([System.IO.File]::Exists($stateFile)) {
+                        [System.IO.File]::Replace($temporaryFile, $stateFile, $backupFile)
+                    } else {
+                        [System.IO.File]::Move($temporaryFile, $stateFile)
+                    }
                     $global:PwshLastDirSavedPath = $path
                 } finally {
                     if ([System.IO.File]::Exists($temporaryFile)) {
                         [System.IO.File]::Delete($temporaryFile)
+                    }
+                    if ([System.IO.File]::Exists($backupFile)) {
+                        [System.IO.File]::Delete($backupFile)
                     }
                 }
             } catch {
